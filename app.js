@@ -980,46 +980,29 @@
     }
 
     signInBtn.addEventListener('click', () => {
+        console.log('=== SIGN IN CLICKED ===');
         if (currentUser) {
-            // Sign out
             auth.signOut().then(() => {
                 currentUser = null;
                 updateAuthUI(null);
                 showToast('👋 Signed out', 'info');
             });
         } else {
-            // Sign in with popup
+            console.log('Attempting signInWithPopup...');
             auth.signInWithPopup(provider).then((result) => {
-                console.log('Sign-in successful:', result.user.displayName);
+                console.log('=== POPUP SUCCESS ===', result.user.email, result.user.displayName);
                 showToast('✅ Signed in as ' + result.user.displayName, 'success');
             }).catch((err) => {
-                console.error('Sign-in error:', err.code, err.message);
-                if (err.code === 'auth/popup-blocked') {
-                    showToast('🔄 Popup blocked, redirecting...', 'info');
-                    auth.signInWithRedirect(provider);
-                } else if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
-                    // User closed popup, do nothing
-                } else if (err.code === 'auth/unauthorized-domain') {
-                    showToast('⚠️ Domain not authorized in Firebase. Add this domain in Firebase Console → Auth → Settings → Authorized domains', 'info');
-                } else {
-                    showToast('⚠️ ' + err.message, 'info');
-                }
+                console.error('=== POPUP ERROR ===', err.code, err.message);
+                showToast('⚠️ Sign-in error: ' + err.code + ' — Please allow popups for this site', 'info');
             });
         }
     });
 
-    // Handle redirect result (for fallback redirect flow)
-    auth.getRedirectResult().then((result) => {
-        if (result && result.user) {
-            console.log('Redirect sign-in successful:', result.user.displayName);
-            showToast('✅ Signed in as ' + result.user.displayName, 'success');
-        }
-    }).catch((err) => {
-        console.error('Redirect error:', err.code, err.message);
-    });
-
     // Auth state listener
+    console.log('=== Setting up auth listener ===');
     auth.onAuthStateChanged(async (user) => {
+        console.log('=== AUTH STATE CHANGED ===', user ? user.email : 'null');
         currentUser = user;
         updateAuthUI(user);
         if (user) {
