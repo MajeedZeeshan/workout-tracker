@@ -988,20 +988,35 @@
                 showToast('👋 Signed out', 'info');
             });
         } else {
-            // Try popup first, fall back to redirect
-            auth.signInWithPopup(provider).catch((err) => {
-                if (err.code === 'auth/popup-blocked' || err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
-                    // Fallback to redirect
+            // Sign in with popup
+            auth.signInWithPopup(provider).then((result) => {
+                console.log('Sign-in successful:', result.user.displayName);
+                showToast('✅ Signed in as ' + result.user.displayName, 'success');
+            }).catch((err) => {
+                console.error('Sign-in error:', err.code, err.message);
+                if (err.code === 'auth/popup-blocked') {
+                    showToast('🔄 Popup blocked, redirecting...', 'info');
                     auth.signInWithRedirect(provider);
+                } else if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
+                    // User closed popup, do nothing
+                } else if (err.code === 'auth/unauthorized-domain') {
+                    showToast('⚠️ Domain not authorized in Firebase. Add this domain in Firebase Console → Auth → Settings → Authorized domains', 'info');
                 } else {
-                    showToast('⚠️ Sign-in failed: ' + err.message, 'info');
+                    showToast('⚠️ ' + err.message, 'info');
                 }
             });
         }
     });
 
     // Handle redirect result (for fallback redirect flow)
-    auth.getRedirectResult().catch(() => {});
+    auth.getRedirectResult().then((result) => {
+        if (result && result.user) {
+            console.log('Redirect sign-in successful:', result.user.displayName);
+            showToast('✅ Signed in as ' + result.user.displayName, 'success');
+        }
+    }).catch((err) => {
+        console.error('Redirect error:', err.code, err.message);
+    });
 
     // Auth state listener
     auth.onAuthStateChanged(async (user) => {
