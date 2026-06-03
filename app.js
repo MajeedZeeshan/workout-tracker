@@ -987,14 +987,19 @@
             updateAuthUI(null);
             showToast('👋 Signed out', 'info');
         } else {
-            // Sign in
-            try {
-                await auth.signInWithPopup(provider);
-            } catch (err) {
-                if (err.code !== 'auth/popup-closed-by-user') {
-                    showToast('⚠️ Sign-in failed: ' + err.message, 'info');
-                }
-            }
+            // Sign in via redirect (avoids popup blockers)
+            auth.signInWithRedirect(provider);
+        }
+    });
+
+    // Handle redirect result on page load
+    auth.getRedirectResult().then((result) => {
+        if (result.user) {
+            showToast('✅ Signed in as ' + result.user.displayName, 'success');
+        }
+    }).catch((err) => {
+        if (err.code && err.code !== 'auth/popup-closed-by-user') {
+            showToast('⚠️ Sign-in failed: ' + err.message, 'info');
         }
     });
 
