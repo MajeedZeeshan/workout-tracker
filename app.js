@@ -979,29 +979,29 @@
         }
     }
 
-    signInBtn.addEventListener('click', async () => {
+    signInBtn.addEventListener('click', () => {
         if (currentUser) {
             // Sign out
-            await auth.signOut();
-            currentUser = null;
-            updateAuthUI(null);
-            showToast('👋 Signed out', 'info');
+            auth.signOut().then(() => {
+                currentUser = null;
+                updateAuthUI(null);
+                showToast('👋 Signed out', 'info');
+            });
         } else {
-            // Sign in via redirect (avoids popup blockers)
-            auth.signInWithRedirect(provider);
+            // Try popup first, fall back to redirect
+            auth.signInWithPopup(provider).catch((err) => {
+                if (err.code === 'auth/popup-blocked' || err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
+                    // Fallback to redirect
+                    auth.signInWithRedirect(provider);
+                } else {
+                    showToast('⚠️ Sign-in failed: ' + err.message, 'info');
+                }
+            });
         }
     });
 
-    // Handle redirect result on page load
-    auth.getRedirectResult().then((result) => {
-        if (result.user) {
-            showToast('✅ Signed in as ' + result.user.displayName, 'success');
-        }
-    }).catch((err) => {
-        if (err.code && err.code !== 'auth/popup-closed-by-user') {
-            showToast('⚠️ Sign-in failed: ' + err.message, 'info');
-        }
-    });
+    // Handle redirect result (for fallback redirect flow)
+    auth.getRedirectResult().catch(() => {});
 
     // Auth state listener
     auth.onAuthStateChanged(async (user) => {
