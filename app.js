@@ -6,6 +6,24 @@
     'use strict';
 
     // ==========================================
+    //  FIREBASE INITIALIZATION
+    // ==========================================
+    const firebaseConfig = {
+        apiKey: "AIzaSyBvvhqj-qRSb8zbJIEmfdtlLeEfB4EADME",
+        authDomain: "discipline-tracker-c8431.firebaseapp.com",
+        projectId: "discipline-tracker-c8431",
+        storageBucket: "discipline-tracker-c8431.firebasestorage.app",
+        messagingSenderId: "361871012973",
+        appId: "1:361871012973:web:6c3a554435d53c6ef9bb64",
+        measurementId: "G-6GJXD5RV8Y"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    let currentUser = null;
+
+    // ==========================================
     //  DATA — Parsed from @thedisciplined_guyy
     // ==========================================
     const ALL_EPISODES = [
@@ -108,6 +126,77 @@
     let previousMilestone = null;
 
     // ==========================================
+    //  CLOUD SYNC (Firestore)
+    // ==========================================
+    function getUserDocRef() {
+        if (!currentUser) return null;
+        return db.collection('users').doc(currentUser.uid);
+    }
+
+    async function syncToCloud() {
+        const ref = getUserDocRef();
+        if (!ref) return;
+        try {
+            await ref.set({
+                completed: state.completed,
+                streak: state.streak,
+                activities: state.activities,
+                notes: notes,
+                lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+        } catch (err) {
+            console.warn('Cloud sync failed:', err);
+        }
+    }
+
+    async function loadFromCloud() {
+        const ref = getUserDocRef();
+        if (!ref) return;
+        try {
+            const doc = await ref.get();
+            if (doc.exists) {
+                const cloud = doc.data();
+                // Merge: cloud wins for completed items (union of both)
+                if (cloud.completed) {
+                    Object.keys(cloud.completed).forEach(id => {
+                        if (!state.completed[id]) {
+                            state.completed[id] = cloud.completed[id];
+                        }
+                    });
+                }
+                if (cloud.activities && cloud.activities.length > 0) {
+                    // Merge activities, deduplicate by time+id, keep latest 20
+                    const merged = [...state.activities, ...cloud.activities];
+                    const seen = new Set();
+                    state.activities = merged.filter(a => {
+                        const key = a.id + a.time;
+                        if (seen.has(key)) return false;
+                        seen.add(key);
+                        return true;
+                    }).sort((a, b) => new Date(b.time) - new Date(a.time)).slice(0, 20);
+                }
+                if (cloud.notes) {
+                    Object.keys(cloud.notes).forEach(id => {
+                        if (!notes[id]) {
+                            notes[id] = cloud.notes[id];
+                        }
+                    });
+                    saveNotes(notes);
+                }
+                updateStreak();
+                saveState(state);
+                renderAll();
+                showToast('☁️ Synced from cloud!', 'success');
+            } else {
+                // First time: push local data to cloud
+                await syncToCloud();
+            }
+        } catch (err) {
+            console.warn('Cloud load failed:', err);
+        }
+    }
+
+    // ==========================================
     //  UTILITY FUNCTIONS
     // ==========================================
     function formatDate(isoStr) {
@@ -155,6 +244,7 @@
         }
         updateStreak();
         saveState(state);
+        syncToCloud();
         checkMilestones();
         renderAll();
     }
@@ -563,6 +653,7 @@
                     delete notes[id];
                 }
                 saveNotes(notes);
+                syncToCloud();
             }, 400);
         });
 
@@ -753,6 +844,7 @@
                         notes = data.notes;
                         saveNotes(notes);
                     }
+                    syncToCloud();
                     renderAll();
                     showToast('📥 Progress imported successfully!', 'success');
                 } else {
@@ -859,6 +951,60 @@
 
     shortcutsHelp.addEventListener('click', (e) => {
         if (e.target === shortcutsHelp) shortcutsHelp.classList.remove('active');
+    });
+
+    // ==========================================
+    //  AUTH — Google Sign-In
+    // ==========================================
+    const signInBtn = document.getElementById('signInBtn');
+    const signInText = document.getElementById('signInText');
+    const provider = new firebase.auth.GoogleAuthProvider();
+
+    function updateAuthUI(user) {
+        if (user) {
+            const name = user.displayName ? user.displayName.split(' ')[0] : 'User';
+            const photo = user.photoURL;
+            signInBtn.classList.add('signed-in');
+            if (photo) {
+                signInBtn.innerHTML = `<img src="${photo}" class="user-avatar" alt=""> ${name} <span class="sync-indicator"></span>`;
+            } else {
+                signInText.textContent = name;
+                signInBtn.innerHTML += ' <span class="sync-indicator"></span>';
+            }
+            signInBtn.title = 'Click to sign out';
+        } else {
+            signInBtn.classList.remove('signed-in');
+            signInBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>Sign In</span>';
+            signInBtn.title = 'Sign in to sync across devices';
+        }
+    }
+
+    signInBtn.addEventListener('click', async () => {
+        if (currentUser) {
+            // Sign out
+            await auth.signOut();
+            currentUser = null;
+            updateAuthUI(null);
+            showToast('👋 Signed out', 'info');
+        } else {
+            // Sign in
+            try {
+                await auth.signInWithPopup(provider);
+            } catch (err) {
+                if (err.code !== 'auth/popup-closed-by-user') {
+                    showToast('⚠️ Sign-in failed: ' + err.message, 'info');
+                }
+            }
+        }
+    });
+
+    // Auth state listener
+    auth.onAuthStateChanged(async (user) => {
+        currentUser = user;
+        updateAuthUI(user);
+        if (user) {
+            await loadFromCloud();
+        }
     });
 
     // ==========================================

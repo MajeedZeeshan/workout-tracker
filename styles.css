@@ -335,6 +335,52 @@ a {
     color: var(--accent-primary);
 }
 
+/* Sign in button */
+.sign-in-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: var(--radius-full);
+    border: 1px solid var(--border-color);
+    background: transparent;
+    color: var(--text-secondary);
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.sign-in-btn:hover {
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+    background: rgba(108, 92, 231, 0.08);
+}
+
+.sign-in-btn.signed-in {
+    border-color: var(--accent-green);
+    color: var(--accent-green);
+    gap: 6px;
+}
+
+.sign-in-btn .user-avatar {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.sync-indicator {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent-green);
+    box-shadow: 0 0 6px rgba(0, 184, 148, 0.5);
+    margin-left: 2px;
+}
+
 /* Data export/import menu */
 .data-menu {
     position: absolute;
