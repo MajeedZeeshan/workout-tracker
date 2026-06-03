@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discipline Tracker — Follow @thedisciplined_guyy</title>
+    <meta name="description" content="A visual workout dashboard to follow Bhavesh's Fat to Fit and Muscle Building series on Instagram.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Animated background particles -->
+    <div class="bg-particles" id="bgParticles"></div>
+
+    <!-- Header -->
+    <header class="header" id="header">
+        <div class="header-inner">
+            <div class="logo">
+                <div class="logo-icon">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 20V10"/>
+                        <path d="M12 20V4"/>
+                        <path d="M6 20v-6"/>
+                    </svg>
+                </div>
+                <span class="logo-text">DisciplineTracker</span>
+            </div>
+            <nav class="nav-tabs" id="navTabs">
+                <button class="nav-tab active" data-tab="dashboard" id="nav-dashboard">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                    Dashboard
+                </button>
+                <button class="nav-tab" data-tab="fattofit" id="nav-fattofit">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                    Fat to Fit
+                </button>
+                <button class="nav-tab" data-tab="muscle" id="nav-muscle">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+                    Muscle Building
+                </button>
+                <button class="nav-tab" data-tab="calendar" id="nav-calendar">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    Calendar
+                </button>
+            </nav>
+            <div class="header-actions">
+                <div class="streak-badge" id="streakBadge">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2c.5 2.5 2 4.5 2 4.5S16 8 16 11a4 4 0 0 1-8 0c0-3 2-4.5 2-4.5S11.5 4.5 12 2z"/></svg>
+                    <span id="streakCount">0</span> day streak
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+
+        <!-- ========== DASHBOARD TAB ========== -->
+        <section class="tab-content active" id="tab-dashboard">
+            <!-- Hero Stats -->
+            <div class="hero-section">
+                <div class="hero-text">
+                    <h1 class="hero-title">Your Fitness Journey</h1>
+                    <p class="hero-subtitle">Following <a href="https://www.instagram.com/thedisciplined_guyy/" target="_blank" class="creator-link">@thedisciplined_guyy</a> — Bhavesh's transformation series</p>
+                </div>
+                <div class="stats-grid" id="statsGrid">
+                    <div class="stat-card stat-card--primary" id="stat-completed">
+                        <div class="stat-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                        </div>
+                        <div class="stat-value" id="totalCompleted">0</div>
+                        <div class="stat-label">Completed</div>
+                    </div>
+                    <div class="stat-card stat-card--accent" id="stat-remaining">
+                        <div class="stat-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        </div>
+                        <div class="stat-value" id="totalRemaining">0</div>
+                        <div class="stat-label">Remaining</div>
+                    </div>
+                    <div class="stat-card stat-card--warm" id="stat-progress">
+                        <div class="stat-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
+                        </div>
+                        <div class="stat-value" id="progressPercent">0%</div>
+                        <div class="stat-label">Progress</div>
+                    </div>
+                    <div class="stat-card stat-card--cool" id="stat-total">
+                        <div class="stat-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                        </div>
+                        <div class="stat-value" id="totalEpisodes">0</div>
+                        <div class="stat-label">Total Episodes</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Overall progress bar -->
+            <div class="progress-section">
+                <div class="progress-header">
+                    <h2 class="section-title">Overall Progress</h2>
+                    <span class="progress-text" id="progressText">0 / 0 episodes</span>
+                </div>
+                <div class="progress-bar-track">
+                    <div class="progress-bar-fill" id="progressBarFill" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- Series Overview Cards -->
+            <div class="series-overview">
+                <h2 class="section-title">Series Overview</h2>
+                <div class="series-cards" id="seriesCards"></div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="recent-activity">
+                <h2 class="section-title">Recent Activity</h2>
+                <div class="activity-list" id="activityList">
+                    <div class="empty-state">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+                        <p>Start watching episodes to see your activity here!</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========== FAT TO FIT TAB ========== -->
+        <section class="tab-content" id="tab-fattofit">
+            <div class="series-header">
+                <div class="series-header-text">
+                    <h1 class="series-title">🔥 Fat to Fit Series</h1>
+                    <p class="series-description">A series of sharing knowledge based on scientific research and years of experience to help you lose fat the healthy way</p>
+                </div>
+                <div class="series-progress-ring" id="fatToFitRing">
+                    <svg viewBox="0 0 120 120" class="ring-svg">
+                        <circle cx="60" cy="60" r="52" class="ring-bg"/>
+                        <circle cx="60" cy="60" r="52" class="ring-fill" id="fatToFitRingFill"/>
+                    </svg>
+                    <div class="ring-text" id="fatToFitRingText">0%</div>
+                </div>
+            </div>
+            <div class="episodes-grid" id="fatToFitGrid"></div>
+        </section>
+
+        <!-- ========== MUSCLE BUILDING TAB ========== -->
+        <section class="tab-content" id="tab-muscle">
+            <div class="series-header">
+                <div class="series-header-text">
+                    <h1 class="series-title">💪 Muscle Building & Discipline Series</h1>
+                    <p class="series-description">Sharing a decade of bodybuilding and fitness experience to help you build muscle & lose fat more efficiently through science</p>
+                </div>
+                <div class="series-progress-ring" id="muscleRing">
+                    <svg viewBox="0 0 120 120" class="ring-svg">
+                        <circle cx="60" cy="60" r="52" class="ring-bg"/>
+                        <circle cx="60" cy="60" r="52" class="ring-fill" id="muscleRingFill"/>
+                    </svg>
+                    <div class="ring-text" id="muscleRingText">0%</div>
+                </div>
+            </div>
+            <div class="episodes-grid" id="muscleGrid"></div>
+        </section>
+
+        <!-- ========== CALENDAR TAB ========== -->
+        <section class="tab-content" id="tab-calendar">
+            <div class="calendar-header">
+                <h1 class="series-title">📅 Content Calendar</h1>
+                <p class="series-description">Timeline view of all episodes sorted by date</p>
+                <div class="calendar-controls">
+                    <div class="filter-group">
+                        <button class="filter-btn active" data-filter="all" id="filter-all">All</button>
+                        <button class="filter-btn" data-filter="fattofit" id="filter-fattofit">Fat to Fit</button>
+                        <button class="filter-btn" data-filter="muscle" id="filter-muscle">Muscle Building</button>
+                        <button class="filter-btn" data-filter="motivation" id="filter-motivation">Motivation</button>
+                    </div>
+                </div>
+            </div>
+            <div class="timeline" id="timeline"></div>
+        </section>
+    </main>
+
+    <!-- Episode Detail Modal -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal" id="episodeModal">
+            <button class="modal-close" id="modalClose">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+            <div class="modal-content" id="modalContent"></div>
+        </div>
+    </div>
+
+    <!-- Toast notifications -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>
