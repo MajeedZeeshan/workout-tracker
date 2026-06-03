@@ -99,7 +99,7 @@
         try {
             const saved = localStorage.getItem(STORAGE_KEY);
             return saved ? JSON.parse(saved) : { completed: {}, streak: 0, lastActivity: null, activities: [] };
-        } catch {
+        } catch (e) {
             return { completed: {}, streak: 0, lastActivity: null, activities: [] };
         }
     }
@@ -112,7 +112,7 @@
         try {
             const saved = localStorage.getItem(NOTES_KEY);
             return saved ? JSON.parse(saved) : {};
-        } catch {
+        } catch (e) {
             return {};
         }
     }
@@ -850,7 +850,7 @@
                 } else {
                     showToast('⚠️ Invalid backup file', 'info');
                 }
-            } catch {
+            } catch (e) {
                 showToast('⚠️ Failed to parse backup file', 'info');
             }
         };
