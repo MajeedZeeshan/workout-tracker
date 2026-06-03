@@ -9,7 +9,7 @@
     //  FIREBASE INITIALIZATION
     // ==========================================
     const firebaseConfig = {
-        apiKey: "AIzaSyBvvhqj-qRSb8zbJIEmfdtlLeEfB4EADME",
+        apiKey: "AIzaSyBvvhqj-qRSb8zbJIEmfdtlLeEf84EADME",
         authDomain: "discipline-tracker-c8431.firebaseapp.com",
         projectId: "discipline-tracker-c8431",
         storageBucket: "discipline-tracker-c8431.firebasestorage.app",
