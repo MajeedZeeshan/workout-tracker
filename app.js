@@ -74,6 +74,8 @@
     //  STATE MANAGEMENT
     // ==========================================
     const STORAGE_KEY = 'disciplineTracker_v1';
+    const NOTES_KEY = 'disciplineTracker_notes';
+    const THEME_KEY = 'disciplineTracker_theme';
 
     function loadState() {
         try {
@@ -88,7 +90,22 @@
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     }
 
+    function loadNotes() {
+        try {
+            const saved = localStorage.getItem(NOTES_KEY);
+            return saved ? JSON.parse(saved) : {};
+        } catch {
+            return {};
+        }
+    }
+
+    function saveNotes(notes) {
+        localStorage.setItem(NOTES_KEY, JSON.stringify(notes));
+    }
+
     let state = loadState();
+    let notes = loadNotes();
+    let previousMilestone = null;
 
     // ==========================================
     //  UTILITY FUNCTIONS
@@ -138,6 +155,7 @@
         }
         updateStreak();
         saveState(state);
+        checkMilestones();
         renderAll();
     }
 
@@ -198,6 +216,7 @@
     function renderAll() {
         renderDashboardStats();
         renderSeriesOverview();
+        renderPopularEpisodes();
         renderActivityList();
         renderFatToFitGrid();
         renderMuscleGrid();
@@ -518,6 +537,11 @@
                     ${completed ? '✅ Completed' : '☐ Mark Complete'}
                 </button>
             </div>
+            <div class="modal-notes">
+                <h4>📝 My Notes</h4>
+                <textarea class="notes-textarea" id="notesTextarea" placeholder="Write your takeaways, key insights, or personal notes...">${notes[id] || ''}</textarea>
+                <div class="notes-save-hint">Auto-saved as you type</div>
+            </div>
         `;
 
         // Toggle complete from modal
@@ -525,6 +549,21 @@
             toggleComplete(id);
             openModal(id); // Re-render modal
             showToast(isCompleted(id) ? '✅ Marked as completed!' : '↩️ Marked as incomplete', isCompleted(id) ? 'success' : 'info');
+        });
+
+        // Notes auto-save
+        const notesTextarea = document.getElementById('notesTextarea');
+        let notesTimeout;
+        notesTextarea.addEventListener('input', () => {
+            clearTimeout(notesTimeout);
+            notesTimeout = setTimeout(() => {
+                if (notesTextarea.value.trim()) {
+                    notes[id] = notesTextarea.value;
+                } else {
+                    delete notes[id];
+                }
+                saveNotes(notes);
+            }, 400);
         });
 
         modalOverlay.classList.add('active');
@@ -540,8 +579,286 @@
     modalOverlay.addEventListener('click', (e) => {
         if (e.target === modalOverlay) closeModal();
     });
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') closeModal();
+
+    // ==========================================
+    //  THEME TOGGLE
+    // ==========================================
+    const themeToggle = document.getElementById('themeToggle');
+    const themeIcon = document.getElementById('themeIcon');
+
+    function setTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem(THEME_KEY, theme);
+        // Update icon
+        if (theme === 'light') {
+            themeIcon.innerHTML = '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
+        } else {
+            themeIcon.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+        }
+        // Update meta theme-color
+        const meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.content = theme === 'light' ? '#f5f5fa' : '#0a0a0f';
+    }
+
+    // Init theme
+    const savedTheme = localStorage.getItem(THEME_KEY) || 'dark';
+    if (savedTheme === 'light') setTheme('light');
+
+    themeToggle.addEventListener('click', () => {
+        const current = document.documentElement.getAttribute('data-theme');
+        setTheme(current === 'light' ? 'dark' : 'light');
+    });
+
+    // ==========================================
+    //  SEARCH
+    // ==========================================
+    const searchInput = document.getElementById('searchInput');
+    const searchResults = document.getElementById('searchResults');
+    const searchKbd = document.getElementById('searchKbd');
+
+    searchInput.addEventListener('input', () => {
+        const query = searchInput.value.trim().toLowerCase();
+        if (query.length < 2) {
+            searchResults.classList.remove('active');
+            searchKbd.style.display = query.length === 0 ? '' : 'none';
+            return;
+        }
+        searchKbd.style.display = 'none';
+
+        const results = ALL_EPISODES.filter(ep => {
+            const searchStr = `${ep.title} ${ep.caption} day ${ep.day || ''} episode ${ep.day || ''}`.toLowerCase();
+            return searchStr.includes(query);
+        });
+
+        if (results.length === 0) {
+            searchResults.innerHTML = '<div class="search-empty">No episodes found for "' + query + '"</div>';
+        } else {
+            searchResults.innerHTML = results.slice(0, 8).map(ep => {
+                const badgeClass = `timeline-item-badge--${ep.series}`;
+                return `
+                    <div class="search-result-item" data-id="${ep.id}">
+                        <span class="search-result-badge ${badgeClass}">${getSeriesLabel(ep.series)}</span>
+                        <span class="search-result-title">${ep.title}</span>
+                        <span class="search-result-check">${isCompleted(ep.id) ? '✅' : '⏳'}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        searchResults.classList.add('active');
+
+        // Click handler
+        searchResults.querySelectorAll('.search-result-item').forEach(item => {
+            item.addEventListener('click', () => {
+                openModal(item.dataset.id);
+                searchInput.value = '';
+                searchResults.classList.remove('active');
+                searchKbd.style.display = '';
+            });
+        });
+    });
+
+    searchInput.addEventListener('focus', () => {
+        searchKbd.style.display = 'none';
+    });
+
+    searchInput.addEventListener('blur', () => {
+        setTimeout(() => {
+            searchResults.classList.remove('active');
+            if (!searchInput.value) searchKbd.style.display = '';
+        }, 200);
+    });
+
+    // ==========================================
+    //  POPULAR EPISODES
+    // ==========================================
+    function renderPopularEpisodes() {
+        const container = document.getElementById('popularList');
+        const sorted = [...ALL_EPISODES]
+            .filter(ep => ep.likesCount > 0)
+            .sort((a, b) => b.likesCount - a.likesCount)
+            .slice(0, 6);
+
+        container.innerHTML = sorted.map((ep, i) => {
+            const badgeClass = `timeline-item-badge--${ep.series}`;
+            return `
+                <div class="popular-item" data-id="${ep.id}">
+                    <span class="popular-rank">#${i + 1}</span>
+                    <div class="popular-info">
+                        <div class="popular-title">${ep.title}</div>
+                        <div class="popular-stats">❤️ ${formatNumber(ep.likesCount)} · 💬 ${formatNumber(ep.commentsCount)}</div>
+                    </div>
+                    <span class="popular-badge ${badgeClass}">${getSeriesLabel(ep.series)}</span>
+                </div>
+            `;
+        }).join('');
+
+        container.querySelectorAll('.popular-item').forEach(item => {
+            item.addEventListener('click', () => openModal(item.dataset.id));
+        });
+    }
+
+    // ==========================================
+    //  EXPORT / IMPORT
+    // ==========================================
+    const dataMenuBtn = document.getElementById('dataMenuBtn');
+    const dataMenu = document.getElementById('dataMenu');
+    const exportBtn = document.getElementById('exportBtn');
+    const importBtn = document.getElementById('importBtn');
+    const importFile = document.getElementById('importFile');
+
+    dataMenuBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        dataMenu.classList.toggle('active');
+    });
+
+    document.addEventListener('click', () => {
+        dataMenu.classList.remove('active');
+    });
+
+    exportBtn.addEventListener('click', () => {
+        const data = {
+            version: 1,
+            exportedAt: new Date().toISOString(),
+            state: state,
+            notes: notes
+        };
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `discipline-tracker-backup-${new Date().toISOString().slice(0, 10)}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('📤 Progress exported successfully!', 'success');
+        dataMenu.classList.remove('active');
+    });
+
+    importBtn.addEventListener('click', () => {
+        importFile.click();
+        dataMenu.classList.remove('active');
+    });
+
+    importFile.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            try {
+                const data = JSON.parse(ev.target.result);
+                if (data.state && data.state.completed) {
+                    state = data.state;
+                    saveState(state);
+                    if (data.notes) {
+                        notes = data.notes;
+                        saveNotes(notes);
+                    }
+                    renderAll();
+                    showToast('📥 Progress imported successfully!', 'success');
+                } else {
+                    showToast('⚠️ Invalid backup file', 'info');
+                }
+            } catch {
+                showToast('⚠️ Failed to parse backup file', 'info');
+            }
+        };
+        reader.readAsText(file);
+        importFile.value = '';
+    });
+
+    // ==========================================
+    //  CONFETTI
+    // ==========================================
+    const confettiCanvas = document.getElementById('confettiCanvas');
+    const confettiCtx = confettiCanvas.getContext('2d');
+    let confettiParticles = [];
+    let confettiAnimId = null;
+
+    function resizeConfetti() {
+        confettiCanvas.width = window.innerWidth;
+        confettiCanvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeConfetti);
+    resizeConfetti();
+
+    function launchConfetti() {
+        confettiParticles = [];
+        const colors = ['#6c5ce7', '#a29bfe', '#fd79a8', '#00cec9', '#fdcb6e', '#00b894', '#e17055', '#55efc4'];
+        for (let i = 0; i < 150; i++) {
+            confettiParticles.push({
+                x: Math.random() * confettiCanvas.width,
+                y: Math.random() * confettiCanvas.height - confettiCanvas.height,
+                w: Math.random() * 10 + 5,
+                h: Math.random() * 6 + 3,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                vx: (Math.random() - 0.5) * 4,
+                vy: Math.random() * 3 + 2,
+                rotation: Math.random() * 360,
+                rotationSpeed: (Math.random() - 0.5) * 10,
+                opacity: 1
+            });
+        }
+        if (confettiAnimId) cancelAnimationFrame(confettiAnimId);
+        animateConfetti();
+    }
+
+    function animateConfetti() {
+        confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+        let alive = false;
+        confettiParticles.forEach(p => {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.05;
+            p.rotation += p.rotationSpeed;
+            p.opacity -= 0.003;
+            if (p.opacity > 0 && p.y < confettiCanvas.height + 20) {
+                alive = true;
+                confettiCtx.save();
+                confettiCtx.globalAlpha = p.opacity;
+                confettiCtx.translate(p.x, p.y);
+                confettiCtx.rotate((p.rotation * Math.PI) / 180);
+                confettiCtx.fillStyle = p.color;
+                confettiCtx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+                confettiCtx.restore();
+            }
+        });
+        if (alive) {
+            confettiAnimId = requestAnimationFrame(animateConfetti);
+        } else {
+            confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+            confettiAnimId = null;
+        }
+    }
+
+    function checkMilestones() {
+        const total = ALL_EPISODES.length;
+        const completed = Object.keys(state.completed).length;
+        const pct = Math.round((completed / total) * 100);
+        const milestones = [25, 50, 75, 100];
+        const currentMilestone = milestones.filter(m => pct >= m).pop() || null;
+
+        if (currentMilestone && currentMilestone !== previousMilestone) {
+            previousMilestone = currentMilestone;
+            launchConfetti();
+            setTimeout(() => {
+                showToast(`🎉 Amazing! You've reached ${currentMilestone}% completion!`, 'success');
+            }, 300);
+        }
+        if (!currentMilestone) previousMilestone = null;
+    }
+
+    // ==========================================
+    //  KEYBOARD SHORTCUTS
+    // ==========================================
+    const shortcutsHelp = document.getElementById('shortcutsHelp');
+    const shortcutsClose = document.getElementById('shortcutsClose');
+
+    shortcutsClose.addEventListener('click', () => {
+        shortcutsHelp.classList.remove('active');
+    });
+
+    shortcutsHelp.addEventListener('click', (e) => {
+        if (e.target === shortcutsHelp) shortcutsHelp.classList.remove('active');
     });
 
     // ==========================================
@@ -565,8 +882,57 @@
     // ==========================================
     //  INITIALIZATION
     // ==========================================
+    // Calculate initial milestone to avoid false trigger
+    const initPct = Math.round((Object.keys(state.completed).length / ALL_EPISODES.length) * 100);
+    previousMilestone = [25, 50, 75, 100].filter(m => initPct >= m).pop() || null;
+
     updateStreak();
     renderAll();
+
+    // Global keyboard handler
+    document.addEventListener('keydown', (e) => {
+        // Don't trigger shortcuts when typing in inputs
+        const tag = document.activeElement.tagName;
+        const isTyping = tag === 'INPUT' || tag === 'TEXTAREA';
+
+        if (e.key === 'Escape') {
+            if (shortcutsHelp.classList.contains('active')) {
+                shortcutsHelp.classList.remove('active');
+            } else if (modalOverlay.classList.contains('active')) {
+                closeModal();
+            } else if (searchInput === document.activeElement) {
+                searchInput.blur();
+                searchInput.value = '';
+                searchResults.classList.remove('active');
+                searchKbd.style.display = '';
+            }
+            return;
+        }
+
+        if (isTyping) return;
+
+        if (e.key === '/') {
+            e.preventDefault();
+            searchInput.focus();
+            return;
+        }
+
+        if (e.key === '?') {
+            e.preventDefault();
+            shortcutsHelp.classList.toggle('active');
+            return;
+        }
+
+        const tabKeys = { '1': 'dashboard', '2': 'fattofit', '3': 'muscle', '4': 'calendar' };
+        if (tabKeys[e.key]) {
+            e.preventDefault();
+            navTabs.forEach(t => t.classList.remove('active'));
+            tabContents.forEach(c => c.classList.remove('active'));
+            document.querySelector(`[data-tab="${tabKeys[e.key]}"]`).classList.add('active');
+            document.getElementById('tab-' + tabKeys[e.key]).classList.add('active');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    });
 
     // Welcome toast
     const totalCompleted = Object.keys(state.completed).length;
@@ -578,6 +944,11 @@
         setTimeout(() => {
             showToast(`Welcome back! ${totalCompleted} episodes completed 🔥`, 'success');
         }, 500);
+    }
+
+    // PWA Service Worker registration
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
     }
 
 })();

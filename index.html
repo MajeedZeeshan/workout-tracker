@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Discipline Tracker — Follow @thedisciplined_guyy</title>
     <meta name="description" content="A visual workout dashboard to follow Bhavesh's Fat to Fit and Muscle Building series on Instagram.">
+    <meta name="theme-color" content="#0a0a0f">
+    <link rel="manifest" href="manifest.json">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -50,9 +52,37 @@
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2c.5 2.5 2 4.5 2 4.5S16 8 16 11a4 4 0 0 1-8 0c0-3 2-4.5 2-4.5S11.5 4.5 12 2z"/></svg>
                     <span id="streakCount">0</span> day streak
                 </div>
+                <button class="icon-btn" id="themeToggle" title="Toggle light/dark mode">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="themeIcon">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                    </svg>
+                </button>
+                <button class="icon-btn" id="dataMenuBtn" title="Export / Import data">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 3v12M8 11l4 4 4-4"/><path d="M20 21H4"/>
+                    </svg>
+                </button>
+                <div class="data-menu" id="dataMenu">
+                    <button class="data-menu-item" id="exportBtn">📤 Export Progress</button>
+                    <button class="data-menu-item" id="importBtn">📥 Import Progress</button>
+                    <input type="file" id="importFile" accept=".json" style="display:none">
+                </div>
             </div>
         </div>
     </header>
+
+    <!-- Search Bar -->
+    <div class="search-bar-container" id="searchBarContainer">
+        <div class="search-bar-inner">
+            <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" class="search-input" id="searchInput" placeholder="Search episodes by title, keyword, or day..." autocomplete="off">
+            <kbd class="search-kbd" id="searchKbd">/</kbd>
+        </div>
+        <div class="search-results" id="searchResults"></div>
+    </div>
+
+    <!-- Confetti Canvas -->
+    <canvas id="confettiCanvas"></canvas>
 
     <!-- Main Content -->
     <main class="main-content">
@@ -112,6 +142,12 @@
             <div class="series-overview">
                 <h2 class="section-title">Series Overview</h2>
                 <div class="series-cards" id="seriesCards"></div>
+            </div>
+
+            <!-- Most Popular Episodes -->
+            <div class="popular-episodes">
+                <h2 class="section-title">🔥 Most Popular Episodes</h2>
+                <div class="popular-list" id="popularList"></div>
             </div>
 
             <!-- Recent Activity -->
@@ -192,6 +228,18 @@
 
     <!-- Toast notifications -->
     <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Keyboard shortcuts help -->
+    <div class="shortcuts-help" id="shortcutsHelp">
+        <div class="shortcuts-content">
+            <h3>⌨️ Keyboard Shortcuts</h3>
+            <div class="shortcut-row"><kbd>/</kbd> <span>Search episodes</span></div>
+            <div class="shortcut-row"><kbd>1</kbd>-<kbd>4</kbd> <span>Switch tabs</span></div>
+            <div class="shortcut-row"><kbd>Esc</kbd> <span>Close modal/search</span></div>
+            <div class="shortcut-row"><kbd>?</kbd> <span>Show/hide shortcuts</span></div>
+            <button class="shortcuts-close" id="shortcutsClose">Got it!</button>
+        </div>
+    </div>
 
     <script src="app.js"></script>
 </body>
